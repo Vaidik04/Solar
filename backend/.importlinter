@@ -1,0 +1,76 @@
+[importlinter]
+root_packages = app
+include_external_packages = True
+
+[importlinter:contract:no-cross-module-model-imports]
+name = Modules must not import each other's SQLAlchemy models directly
+type = forbidden
+source_modules =
+    app.modules.crm
+    app.modules.project
+    app.modules.engineering
+    app.modules.assets
+    app.modules.supply
+    app.modules.documents
+    app.modules.regulations
+    app.modules.compliance
+    app.modules.reconciliation
+    app.modules.field
+    app.modules.warranty
+    app.modules.oam
+    app.modules.telemetry
+    app.modules.platform
+    app.modules.identity
+forbidden_modules =
+    app.modules.crm.models
+    app.modules.project.models
+    app.modules.engineering.models
+    app.modules.assets.models
+    app.modules.supply.models
+    app.modules.documents.models
+    app.modules.regulations.models
+    app.modules.compliance.models
+    app.modules.reconciliation.models
+    app.modules.field.models
+    app.modules.warranty.models
+    app.modules.oam.models
+    app.modules.telemetry.models
+    app.modules.platform.models
+    app.modules.identity.models
+ignore_imports =
+    # Each module may import its OWN models
+    app.modules.crm -> app.modules.crm.models
+    app.modules.project -> app.modules.project.models
+    app.modules.engineering -> app.modules.engineering.models
+    app.modules.assets -> app.modules.assets.models
+    app.modules.supply -> app.modules.supply.models
+    app.modules.documents -> app.modules.documents.models
+    app.modules.regulations -> app.modules.regulations.models
+    app.modules.compliance -> app.modules.compliance.models
+    app.modules.reconciliation -> app.modules.reconciliation.models
+    app.modules.field -> app.modules.field.models
+    app.modules.warranty -> app.modules.warranty.models
+    app.modules.oam -> app.modules.oam.models
+    app.modules.telemetry -> app.modules.telemetry.models
+    app.modules.platform -> app.modules.platform.models
+    app.modules.identity -> app.modules.identity.models
+
+[importlinter:contract:no-bypass-service-interface]
+name = Modules must only call other modules via their .service interface
+type = layers
+layers =
+    app.modules.platform
+    app.modules.identity
+    app.modules.crm
+    app.modules.project
+    app.modules.engineering
+    app.modules.assets
+    app.modules.supply
+    app.modules.documents
+    app.modules.regulations
+    app.modules.compliance
+    app.modules.reconciliation
+    app.modules.field
+    app.modules.warranty
+    app.modules.oam
+    app.modules.telemetry

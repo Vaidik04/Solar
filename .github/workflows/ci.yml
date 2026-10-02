@@ -1,0 +1,102 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint, Format & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "poetry"
+
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction
+
+      - name: Ruff Check
+        working-directory: backend
+        run: poetry run ruff check .
+
+      - name: Ruff Format Check
+        working-directory: backend
+        run: poetry run ruff format --check .
+
+      - name: Mypy Typecheck
+        working-directory: backend
+        run: poetry run mypy app
+
+      - name: Module Boundary Check (ImportLinter)
+        working-directory: backend
+        run: poetry run lint-imports
+
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: solar_user
+          POSTGRES_PASSWORD: solar_test_password
+          POSTGRES_DB: solar_operations_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "poetry"
+
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction
+
+      - name: Run Tests with Coverage
+        working-directory: backend
+        env:
+          APP_ENV: testing
+          DATABASE_URL: postgresql://solar_user:solar_test_password@localhost:5432/solar_operations_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test_secret_key_at_least_32_bytes_long_1234567890
+          AUDIT_CHECKPOINT_SECRET: test_audit_checkpoint_secret_32_bytes
+        run: poetry run pytest --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage.xml
